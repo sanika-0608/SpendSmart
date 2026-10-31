@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Expense</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+    <h1>Edit Expense ✏️</h1>
+    <p class="subtitle">Update your expense details below.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="form-section">
+        <form action="{{ url_for('edit_expense', index=index) }}"
+              method="POST">
+
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date"
+                   value="{{ expense.date }}" required>
+
+            <label for="amount">Amount (₹)</label>
+            <input type="number" id="amount" name="amount"
+                   step="0.01" min="0.01"
+                   value="{{ '%.2f'|format(expense.amount) }}" required>
+
+            <label for="category">Category</label>
+            <select id="category" name="category" required>
+                {% for category in categories %}
+                    <option value="{{ category }}"
+                        {% if category == expense.category %}selected{% endif %}>
+                        {{ category }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <label for="description">Description</label>
+            <input type="text" id="description" name="description"
+                   value="{{ expense.description }}" required>
+
+            <button type="submit">Save Changes</button>
+        </form>
+
+        <a href="{{ url_for('index') }}" class="back-link">
+            ← Back to Expenses
+        </a>
+    </div>
+</div>
+
+<script>
+    // Apply the same theme used on the main page
+    const savedTheme = localStorage.getItem("expenseTrackerTheme") || "light";
+
+    if (savedTheme === "dark") {
+        document.body.classList.add("dark-mode");
+    } else {
+        document.body.classList.remove("dark-mode");
+    }
+</script>
+
+
+</body>
+</html>

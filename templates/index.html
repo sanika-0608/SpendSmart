@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SpendSmart | Personal Finance Tracker</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="top-bar">
+        <h1>SpendSmart 💸</h1>
+
+        <button type="button" id="themeToggle" class="theme-button">
+            🌙 Dark Mode
+        </button>
+    </div>
+
+    <p class="subtitle">
+        Track your spending, manage your money.
+    </p>
+
+    <!-- Success and error messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="message {{ category }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+
+    <!-- Total Expenses -->
+    <div class="summary">
+        <h2>Total Expenses</h2>
+        <p>₹{{ "%.2f"|format(total) }}</p>
+    </div>
+
+
+    <!-- Add Expense Form -->
+    <div class="form-section">
+
+        <h2>Add New Expense</h2>
+
+        <form action="{{ url_for('add_expense') }}" method="POST">
+
+            <label for="date">Date</label>
+
+            <input
+                type="date"
+                id="date"
+                name="date"
+                value="{{ today }}"
+                required
+            >
+
+            <label for="amount">Amount (₹)</label>
+
+            <input
+                type="number"
+                id="amount"
+                name="amount"
+                placeholder="Enter amount"
+                min="0.01"
+                step="0.01"
+                required
+            >
+
+            <label for="category">Category</label>
+
+            <select id="category" name="category" required>
+                <option value="">Select category</option>
+                <option value="Food">Food</option>
+                <option value="Travel">Travel</option>
+                <option value="Shopping">Shopping</option>
+                <option value="Other">Other</option>
+            </select>
+
+            <label for="description">Description</label>
+
+            <input
+                type="text"
+                id="description"
+                name="description"
+                placeholder="What did you spend on?"
+                required
+            >
+
+            <button type="submit">Add Expense</button>
+
+        </form>
+
+    </div>
+
+
+    <!-- Category-wise Summary -->
+    <div class="expenses-section">
+
+        <h2>Category-wise Summary</h2>
+
+        {% if category_totals %}
+
+            {% for category, amount in category_totals.items() %}
+
+                <p>
+                    <strong>{{ category }}:</strong>
+                    ₹{{ "%.2f"|format(amount) }}
+                </p>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p>No expenses recorded yet.</p>
+
+        {% endif %}
+
+    </div>
+
+
+    <!-- Monthly Summary -->
+    <div class="expenses-section">
+
+        <h2>Monthly Summary</h2>
+
+        <form action="{{ url_for('index') }}" method="GET">
+
+            <label for="month">Select Month</label>
+
+            <input
+                type="month"
+                id="month"
+                name="month"
+                value="{{ selected_month }}"
+                required
+            >
+
+            <button type="submit">View Monthly Total</button>
+
+        </form>
+
+        <h3>
+            Total for {{ selected_month }}:
+            ₹{{ "%.2f"|format(monthly_total) }}
+        </h3>
+
+    </div>
+    
+<!-- Spending Charts -->
+<div class="expenses-section charts-section">
+    <!-- Date-wise Expense Filter -->
+<div class="expenses-section">
+    <h2>📅 Filter Expenses by Date</h2>
+
+    <form method="GET" action="/">
+        <label for="filter_date">Select Date:</label>
+        <input type="date" id="filter_date" name="filter_date" value="{{ filter_date }}">
+
+        <button type="submit">Filter</button>
+    </form>
+    <a href="{{ url_for('index') }}" class="back-link">Clear Filter</a>
+</div>
+
+    <h2>📊 Spending Analytics</h2>
+
+    <div class="charts-container">
+
+        <!-- Category-wise Pie Chart -->
+        <div class="chart-card">
+            <h3>Category-wise Spending</h3>
+            <canvas id="categoryChart"></canvas>
+        </div>
+
+        <!-- Monthly Spending Bar Chart -->
+        <div class="chart-card">
+            <h3>Monthly Spending</h3>
+            <canvas id="monthlyChart"></canvas>
+        </div>
+
+    </div>
+
+    {% if not expenses %}
+        <p class="chart-note">
+            Add your first expense to see your spending charts.
+        </p>
+    {% endif %}
+
+</div>
+
+
+
+    <!-- All Expenses -->
+<div class="expenses-section">
+
+    <h2>All Expenses</h2>
+
+    <button
+        type="button"
+        id="viewExpensesBtn"
+        onclick="toggleExpenses()"
+    >
+        View All Expenses
+    </button>
+
+    <div id="expensesList" style="display: none;">
+
+        {% if expenses %}
+
+            {% for expense in expenses %}
+
+                <div class="expense-card">
+
+                    <p>
+                        <strong>Date:</strong>
+                        {{ expense.date }}
+                    </p>
+
+                    <p>
+                        <strong>Amount:</strong>
+                        ₹{{ "%.2f"|format(expense.amount) }}
+                    </p>
+
+                    <p>
+                        <strong>Category:</strong>
+                        {{ expense.category }}
+                    </p>
+
+                    <p>
+                        <strong>Description:</strong>
+                        {{ expense.description }}
+                    </p>
+
+
+<div class="expense-actions">
+
+    <a href="{{ url_for('edit_expense_page', index=loop.index0) }}"
+       class="edit-button">
+        ✏️ Edit Expense
+    </a>
+
+    <form
+        action="{{ url_for('remove_expense', index=loop.index0) }}"
+        method="POST"
+        onsubmit="return confirm('Are you sure you want to delete this expense?');"
+    >
+        <button type="submit" class="delete-button">
+            🗑️ Delete Expense
+        </button>
+    </form>
+
+</div>
+
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <p>No expenses recorded yet.</p>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+<script>
+    // Show or hide expenses
+    function toggleExpenses() {
+        const expensesList = document.getElementById("expensesList");
+        const button = document.getElementById("viewExpensesBtn");
+
+        if (expensesList.style.display === "none") {
+            expensesList.style.display = "block";
+            button.textContent = "Hide Expenses";
+        } else {
+            expensesList.style.display = "none";
+            button.textContent = "View All Expenses";
+        }
+    }
+
+    // Dark and light mode
+    const themeToggle = document.getElementById("themeToggle");
+
+    function applyTheme(theme) {
+        if (theme === "dark") {
+            document.body.classList.add("dark-mode");
+            themeToggle.textContent = "☀️ Light Mode";
+        } else {
+            document.body.classList.remove("dark-mode");
+            themeToggle.textContent = "🌙 Dark Mode";
+        }
+    }
+
+    // Load previously selected theme
+    const savedTheme = localStorage.getItem("expenseTrackerTheme") || "light";
+    applyTheme(savedTheme);
+
+    // Switch theme on button click
+    themeToggle.addEventListener("click", function () {
+        const isDark = document.body.classList.contains("dark-mode");
+        const newTheme = isDark ? "light" : "dark";
+
+        localStorage.setItem("expenseTrackerTheme", newTheme);
+        applyTheme(newTheme);
+    });
+</script>
+
+<!-- Chart.js library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const categoryLabels = {{ chart_categories | tojson }};
+    const categoryAmounts = {{ chart_category_amounts | tojson }};
+
+    const monthlyLabels = {{ chart_months | tojson }};
+    const monthlyAmounts = {{ chart_month_amounts | tojson }};
+
+    // Read the saved theme
+    const isDarkMode = document.body.classList.contains("dark-mode");
+
+    const textColor = isDarkMode ? "#e5e7eb" : "#374151";
+    const gridColor = isDarkMode ? "#475569" : "#e5e7eb";
+
+    
+// Category-wise Pie Chart
+const categoryCanvas = document.getElementById("categoryChart");
+
+new Chart(categoryCanvas, {
+    type: "pie",
+
+    data: {
+        labels: categoryLabels,
+
+        datasets: [{
+            data: categoryAmounts,
+            backgroundColor: [
+                "#60a5fa",
+                "#34d399",
+                "#fbbf24",
+                "#f87171"
+            ],
+            borderWidth: 2,
+            borderColor: isDarkMode ? "#1e293b" : "#ffffff"
+        }]
+    },
+
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+
+        plugins: {
+            legend: {
+                position: "bottom",
+                labels: {
+                    color: textColor,
+                    padding: 18
+                }
+            },
+
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        const amount = Number(context.raw);
+                        const total = categoryAmounts.reduce(
+                            (sum, value) => sum + Number(value), 0
+                        );
+                        const percentage = total > 0
+                            ? ((amount / total) * 100).toFixed(1)
+                            : "0.0";
+
+                        return context.label + ": ₹" +
+                            amount.toFixed(2) + " (" +
+                            percentage + "%)";
+                    }
+                }
+            }
+        }
+    }
+});
+// Display amount above each bar
+const amountLabelsPlugin = {
+    id: "amountLabels",
+
+    afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+
+        ctx.save();
+        ctx.font = "bold 12px Arial";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillStyle = textColor;
+
+        chart.data.datasets.forEach((dataset, datasetIndex) => {
+            const meta = chart.getDatasetMeta(datasetIndex);
+
+            meta.data.forEach((bar, index) => {
+                const value = Number(dataset.data[index]);
+
+                ctx.fillText(
+                    "₹" + value.toFixed(0),
+                    bar.x,
+                    bar.y - 6
+                );
+            });
+        });
+
+        ctx.restore();
+    }
+};
+    
+
+    // Monthly Spending Bar Chart
+    const monthlyCanvas = document.getElementById("monthlyChart");
+
+    new Chart(monthlyCanvas, {
+            plugins: [amountLabelsPlugin],
+        type: "bar",
+
+        data: {
+            labels: monthlyLabels,
+
+            datasets: [{
+                label: "Total Spending (₹)",
+                data: monthlyAmounts,
+                backgroundColor: "#60a5fa",
+                borderColor: "#3b82f6",
+                borderWidth: 1,
+                borderRadius: 6
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+
+            plugins: {
+                legend: {
+                    labels: {
+                        color: textColor
+                    }
+                },
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return "₹" +
+                                Number(context.raw).toFixed(2);
+                        }
+                    }
+                }
+            },
+
+            scales: {
+                x: {
+                    ticks: {
+                        color: textColor
+                    },
+                    grid: {
+                        color: gridColor
+                    }
+                },
+
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor,
+                        callback: function(value) {
+                            return "₹" + value;
+                        }
+                    },
+                    grid: {
+                        color: gridColor
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+</div>
+
+</body>
+</html>
